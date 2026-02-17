@@ -207,11 +207,41 @@ async def handle_chat_stream(request: ChatRequest):
     logger.info(f"Stream chat [{session_id}]: {request.query[:80]}...")
 
     def event_generator():
+        full_answer = ""
+        metadata = {}
+
         for event in chat_stream(
             query=request.query,
             conversation_history=request.conversation_history,
         ):
             yield event
+
+            # Parse SSE events to capture metadata and full answer
+            if event.startswith("data: "):
+                try:
+                    import json as _json
+                    payload = _json.loads(event[6:].strip())
+                    if payload.get("type") == "metadata":
+                        metadata = payload
+                    elif payload.get("type") == "chunk":
+                        full_answer += payload.get("text", "")
+                except Exception:
+                    pass
+
+        # Log after streaming completes
+        try:
+            log_interaction(
+                session_id=session_id,
+                query=request.query,
+                answer=full_answer,
+                confidence=metadata.get("confidence", 0.0),
+                sources=metadata.get("sources", []),
+                matches_found=metadata.get("matches_found", 0),
+                latency_seconds=metadata.get("latency_seconds", 0.0),
+                model=metadata.get("model", ""),
+            )
+        except Exception as e:
+            logger.error(f"Failed to log streamed interaction: {e}", exc_info=True)
 
     return StreamingResponse(
         event_generator(),
