@@ -15,6 +15,7 @@ from typing import Optional, List, Dict
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.config import (
@@ -25,7 +26,7 @@ from app.config import (
     LOG_LEVEL,
 )
 from app.indexer import reindex_company_qa
-from app.chat import chat
+from app.chat import chat, chat_stream, clear_cache
 from app.logger import log_interaction
 from app.models import init_db
 from app.analytics_router import router as analytics_router
@@ -188,6 +189,41 @@ async def handle_chat(request: ChatRequest):
 
 
 # ═══════════════════════════════════════════════════════════
+# Streaming Chat Endpoint (SSE)
+# ═══════════════════════════════════════════════════════════
+
+@app.post("/api/chat/stream")
+async def handle_chat_stream(request: ChatRequest):
+    """
+    Streaming chat endpoint using Server-Sent Events.
+    The visitor sees text appearing in real-time instead of
+    waiting for the full response.
+    """
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
+
+    session_id = request.session_id or str(uuid.uuid4())
+    logger.info(f"Stream chat [{session_id}]: {request.query[:80]}...")
+
+    def event_generator():
+        for event in chat_stream(
+            query=request.query,
+            conversation_history=request.conversation_history,
+        ):
+            yield event
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Session-Id": session_id,
+        },
+    )
+
+
+# ═══════════════════════════════════════════════════════════
 # Admin Endpoint (manual re-index)
 # ═══════════════════════════════════════════════════════════
 
@@ -204,6 +240,9 @@ async def manual_reindex(background_tasks: BackgroundTasks):
         spreadsheet_id=COMPANY_QA_SPREADSHEET_ID,
         sheet_name=COMPANY_QA_SHEET_NAME,
     )
+
+    # Clear query cache since knowledge base is changing
+    clear_cache()
 
     return {
         "status": "accepted",
