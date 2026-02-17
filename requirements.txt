@@ -1,0 +1,20 @@
+fastapi==0.115.0
+uvicorn==0.30.6
+python-dotenv==1.0.1
+pydantic==2.9.2
+
+# Google Sheets API
+google-api-python-client==2.147.0
+google-auth==2.35.0
+
+# AI & Vector DB
+openai==1.51.0
+pinecone-client==5.0.1
+
+# Database
+sqlalchemy==2.0.35
+psycopg2-binary==2.9.9
+alembic==1.13.3
+
+# Scheduled sync (optional — if using APScheduler instead of cron)
+# apscheduler==3.10.4
