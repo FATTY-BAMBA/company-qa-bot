@@ -33,7 +33,7 @@ APP_PORT = int(os.environ.get("APP_PORT", 8000))
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
 # ── Database ──
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./company_qa.db")
+DATABASE_URL = os.environ.get("DATABASE_PUBLIC_URL") or os.environ.get("DATABASE_URL", "sqlite:///./company_qa.db")
 
 # ── Analytics ──
 ANALYTICS_API_KEY = os.environ.get("ANALYTICS_API_KEY", "")
