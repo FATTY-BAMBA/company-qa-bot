@@ -16,6 +16,7 @@ from typing import Optional, List, Dict
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.config import (
@@ -265,3 +266,28 @@ async def health_check():
         "environment": APP_ENV,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+# ═══════════════════════════════════════════════════════════
+# Static Files & Demo Pages
+# ═══════════════════════════════════════════════════════════
+
+import os
+from fastapi.responses import FileResponse, RedirectResponse
+
+static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+
+@app.get("/")
+async def root():
+    """Redirect root to chat demo."""
+    return RedirectResponse(url="/chat")
+
+@app.get("/chat")
+async def chat_page():
+    """Serve the chat demo page."""
+    return FileResponse(os.path.join(static_dir, "chat.html"))
+
+@app.get("/dashboard")
+async def dashboard_page():
+    """Serve the analytics dashboard."""
+    return FileResponse(os.path.join(static_dir, "dashboard.html"))

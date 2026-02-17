@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客服機器人分析儀表板 — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #16162a;
+            --bg-tertiary: #1a1a2e;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --accent-glow: rgba(108, 92, 231, 0.2);
+            --text-primary: #e8e8f0;
+            --text-secondary: #8888a8;
+            --text-muted: #55556a;
+            --border: #2a2a40;
+            --success: #00cec9;
+            --warning: #fdcb6e;
+            --error: #ff6b6b;
+            --radius: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        .dash-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dash-header-left {
+            display: flex; align-items: center; gap: 14px;
+        }
+
+        .dash-header-icon {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, var(--accent), #a29bfe);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .dash-header h1 { font-size: 18px; font-weight: 600; }
+        .dash-header p { font-size: 12px; color: var(--text-secondary); }
+
+        .dash-header-right {
+            display: flex; gap: 10px; align-items: center;
+        }
+
+        .period-btn {
+            padding: 6px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .period-btn.active, .period-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .refresh-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, var(--accent), #7c6cf0);
+            border: none;
+            border-radius: 20px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: transform 0.15s;
+        }
+
+        .refresh-btn:hover { transform: scale(1.03); }
+
+        /* ── Main Grid ── */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 24px 32px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ── Stat Cards ── */
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ── Wide Cards ── */
+        .wide-card {
+            grid-column: span 2;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+
+        .full-card {
+            grid-column: span 4;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title span { font-size: 16px; }
+
+        /* ── Table ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table td {
+            padding: 12px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(42, 42, 64, 0.5);
+        }
+
+        .data-table tr:last-child td { border-bottom: none; }
+
+        .data-table tr:hover td { background: rgba(108, 92, 231, 0.04); }
+
+        .rank {
+            width: 28px; height: 28px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-light);
+        }
+
+        .rank.top { background: linear-gradient(135deg, var(--accent), #7c6cf0); color: #fff; }
+
+        .count-badge {
+            padding: 3px 10px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+        }
+
+        .confidence-mini {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .conf-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+        }
+
+        /* ── Bar Chart ── */
+        .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+
+        .bar-row {
+            display: flex; align-items: center; gap: 12px;
+        }
+
+        .bar-label {
+            width: 120px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: right;
+            flex-shrink: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .bar-track {
+            flex: 1; height: 24px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: #fff;
+            min-width: 40px;
+        }
+
+        /* ── Summary Card ── */
+        .summary-text {
+            font-size: 14px;
+            line-height: 1.9;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+        }
+
+        .summary-text h3, .summary-text h4 {
+            color: var(--text-primary);
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        /* ── Unanswered list ── */
+        .unanswered-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--error);
+        }
+
+        .unanswered-item .q { font-size: 13px; flex: 1; }
+
+        .unanswered-item .conf {
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--error);
+        }
+
+        /* ── Loading ── */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 13px;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .dash-grid { grid-template-columns: repeat(2, 1fr); }
+            .wide-card { grid-column: span 2; }
+            .full-card { grid-column: span 2; }
+        }
+
+        @media (max-width: 600px) {
+            .dash-grid { grid-template-columns: 1fr; padding: 16px; }
+            .wide-card, .full-card { grid-column: span 1; }
+            .dash-header { padding: 16px; }
+            .dash-header-right { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dash-header">
+    <div class="dash-header-left">
+        <div class="dash-header-icon">📊</div>
+        <div>
+            <h1>客服機器人分析儀表板</h1>
+            <p>即時數據洞察與管理報告</p>
+        </div>
+    </div>
+    <div class="dash-header-right">
+        <button class="period-btn" onclick="loadData(7)">7 天</button>
+        <button class="period-btn active" onclick="loadData(30)">30 天</button>
+        <button class="period-btn" onclick="loadData(90)">90 天</button>
+        <button class="refresh-btn" onclick="loadData(currentDays)">🔄 重新整理</button>
+    </div>
+</div>
+
+<div class="dash-grid" id="dashboard">
+    <div class="loading" style="grid-column: span 4;">
+        <div class="spinner"></div>
+        載入中...
+    </div>
+</div>
+
+<script>
+    const API_BASE = window.location.origin;
+    let currentDays = 30;
+
+    async function loadData(days) {
+        currentDays = days;
+
+        // Update active button
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+
+        const dash = document.getElementById('dashboard');
+        dash.innerHTML = '<div class="loading" style="grid-column: span 4;"><div class="spinner"></div>載入中...</div>';
+
+        try {
+            const [overview, summary, trends] = await Promise.all([
+                fetch(`${API_BASE}/api/analytics/overview?days=${days}`).then(r => r.json()),
+                fetch(`${API_BASE}/api/analytics/weekly-summary`).then(r => r.json()),
+                fetch(`${API_BASE}/api/analytics/trends?days=${days}`).then(r => r.json()),
+            ]);
+
+            renderDashboard(overview, summary, trends);
+        } catch (err) {
+            dash.innerHTML = '<div class="loading" style="grid-column: span 4;">❌ 無法載入數據，請確認 API 是否正常運作。</div>';
+            console.error(err);
+        }
+    }
+
+    function renderDashboard(overview, summary, trends) {
+        const dash = document.getElementById('dashboard');
+        const e = overview.engagement || {};
+        const u = overview.unanswered || {};
+        const lc = overview.low_confidence || {};
+
+        dash.innerHTML = `
+            <!-- Stat Cards -->
+            <div class="stat-card">
+                <div class="stat-label">總訊息數</div>
+                <div class="stat-value">${e.total_messages || 0}</div>
+                <div class="stat-sub">過去 ${currentDays} 天</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">獨立訪客</div>
+                <div class="stat-value">${e.total_sessions || 0}</div>
+                <div class="stat-sub">每日平均 ${e.avg_messages_per_day || 0} 則</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">未解答率</div>
+                <div class="stat-value" style="${u.rate_percent > 15 ? '-webkit-text-fill-color: var(--error)' : ''}">${u.rate_percent || 0}%</div>
+                <div class="stat-sub">${u.count || 0} 則未解答</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">低信心度</div>
+                <div class="stat-value" style="${lc.rate_percent > 20 ? '-webkit-text-fill-color: var(--warning)' : ''}">${lc.rate_percent || 0}%</div>
+                <div class="stat-sub">${lc.count || 0} 則低於門檻</div>
+            </div>
+
+            <!-- Top Questions -->
+            <div class="wide-card" id="topQuestionsCard">
+                <div class="card-title"><span>🔥</span> 熱門問題排行</div>
+                ${renderTopQuestions(overview.top_questions || [])}
+            </div>
+
+            <!-- Unanswered -->
+            <div class="wide-card" id="unansweredCard">
+                <div class="card-title"><span>⚠️</span> 知識庫缺口（未解答問題）</div>
+                ${renderUnanswered(u.recent || [])}
+            </div>
+
+            <!-- Categories -->
+            <div class="wide-card" id="categoriesCard">
+                <div class="card-title"><span>📂</span> 分類統計</div>
+                ${renderCategories(overview.categories || [])}
+            </div>
+
+            <!-- Low Confidence -->
+            <div class="wide-card" id="lowConfCard">
+                <div class="card-title"><span>🎯</span> 低信心度回應</div>
+                ${renderLowConfidence(lc.worst || [])}
+            </div>
+
+            <!-- Weekly Summary -->
+            <div class="full-card" id="summaryCard">
+                <div class="card-title"><span>📋</span> AI 週報摘要</div>
+                <div class="summary-text">${formatSummary(summary.summary || '尚無摘要')}</div>
+            </div>
+
+            <!-- Trends -->
+            <div class="full-card" id="trendsCard">
+                <div class="card-title"><span>📈</span> 每日趨勢</div>
+                ${renderTrends(trends.daily_trends || [])}
+            </div>
+        `;
+    }
+
+    function renderTopQuestions(questions) {
+        if (!questions.length) return '<div style="color: var(--text-muted); font-size: 13px;">尚無數據</div>';
+        return `<table class="data-table">
+            <tr><th>排名</th><th>問題</th><th>次數</th><th>信心度</th></tr>
+            ${questions.map((q, i) => {
+                const confColor = q.avg_confidence > 0.6 ? 'var(--success)' : q.avg_confidence > 0.4 ? 'var(--warning)' : 'var(--error)';
+                return `<tr>
+                    <td><span class="rank ${i === 0 ? 'top' : ''}">${i + 1}</span></td>
+                    <td>${q.question}</td>
+                    <td><span class="count-badge">${q.count}x</span></td>
+                    <td><span class="confidence-mini">
+                        <span class="conf-dot" style="background: ${confColor}"></span>
+                        ${Math.round(q.avg_confidence * 100)}%
+                    </span></td>
+                </tr>`;
+            }).join('')}
+        </table>`;
+    }
+
+    function renderUnanswered(questions) {
+        if (!questions.length) return '<div style="color: var(--success); font-size: 13px;">🎉 太好了！目前沒有未解答的問題。</div>';
+        return questions.map(q => `
+            <div class="unanswered-item">
+                <div class="q">${q.question}</div>
+                <div class="conf">${Math.round(q.confidence * 100)}%</div>
+            </div>
+        `).join('');
+    }
+
+    function renderCategories(categories) {
+        if (!categories.length) return '<div style="color: var(--text-muted); font-size: 13px;">尚無分類數據（需在 Google Sheet 新增 category 欄位）</div>';
+        const max = Math.max(...categories.map(c => c.count));
+        return '<div class="bar-chart">' + categories.map(c => `
+            <div class="bar-row">
+                <div class="bar-label">${c.category}</div>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width: ${(c.count / max * 100)}%">${c.count}</div>
+                </div>
+            </div>
+        `).join('') + '</div>';
+    }
+
+    function renderLowConfidence(items) {
+        if (!items.length) return '<div style="color: var(--success); font-size: 13px;">🎉 所有回應都在信心門檻以上！</div>';
+        return `<table class="data-table">
+            <tr><th>問題</th><th>信心度</th><th>時間</th></tr>
+            ${items.map(item => {
+                const date = new Date(item.asked_at).toLocaleDateString('zh-TW');
+                return `<tr>
+                    <td>${item.question}</td>
+                    <td><span style="color: var(--error); font-family: 'JetBrains Mono', monospace; font-size: 12px;">${Math.round(item.confidence * 100)}%</span></td>
+                    <td style="color: var(--text-muted); font-size: 12px;">${date}</td>
+                </tr>`;
+            }).join('')}
+        </table>`;
+    }
+
+    function renderTrends(trends) {
+        if (!trends.length) return '<div style="color: var(--text-muted); font-size: 13px;">尚無趨勢數據</div>';
+        const max = Math.max(...trends.map(t => t.message_count), 1);
+        return '<div class="bar-chart">' + trends.map(t => `
+            <div class="bar-row">
+                <div class="bar-label">${t.date || ''}</div>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width: ${(t.message_count / max * 100)}%; background: linear-gradient(90deg, var(--success), #00b894);">${t.message_count} 則 · ${t.unique_sessions} 訪客</div>
+                </div>
+            </div>
+        `).join('') + '</div>';
+    }
+
+    function formatSummary(text) {
+        return text
+            .replace(/### (.*)/g, '<h3>$1</h3>')
+            .replace(/#### (.*)/g, '<h4>$1</h4>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+    }
+
+    // Auto-load on page load
+    window.onload = () => loadData(30);
+</script>
+
+</body>
+</html>
